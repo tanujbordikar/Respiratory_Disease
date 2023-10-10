@@ -3,17 +3,13 @@ import numpy as np
 import librosa
 import tensorflow as tf
 from flask_cors import CORS
-import os
 
 app = Flask(__name__)
 CORS(app)
 classes = ["COPD", "Bronchiolitis", "Pneumonia", "URTI", "Healthy"]
 
-# Define the upload folder and allowed extensions
-UPLOAD_FOLDER = 'uploads'
+# Define the allowed extensions
 ALLOWED_EXTENSIONS = {'wav'}
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -25,11 +21,9 @@ def stretch(data, rate):
 # Load the pre-trained model
 model = tf.keras.models.load_model('respiratory.h5')
 
-def preprocess_audio(audio_path):
+def preprocess_audio(audio_data):
     try:
-        data_x, sampling_rate = librosa.load(audio_path)
-        # data_x = librosa.effects.time_stretch(data_x, 1.2)
-
+        data_x, sampling_rate = librosa.load(audio_data)
         features = np.mean(librosa.feature.mfcc(y=data_x, sr=sampling_rate, n_mfcc=52).T, axis=0)
         features = features.reshape(1, 52)
 
@@ -37,22 +31,20 @@ def preprocess_audio(audio_path):
     except Exception as e:
         return None, str(e)
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Hello Tanuj!"
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # if 'file' not in request.files:
-        #     return jsonify({'error': 'No file part'})
-
         file = request.files['file']
 
         if file.filename == '':
             return jsonify({'error': 'No selected file'})
 
         if file and allowed_file(file.filename):
-            filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(filename)
-
-            processed_audio = preprocess_audio(filename)
+            processed_audio = preprocess_audio(file)
 
             # Make predictions using the model
             test_pred = model.predict(np.expand_dims(processed_audio, axis=1))

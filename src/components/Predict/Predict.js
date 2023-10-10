@@ -32,6 +32,8 @@ function App() {
     <h1>Respiratory Disease Predictor</h1>
       <input type="file" accept=".wav" onChange={handleFileChange} />
       <button onClick={handleSubmit}>Submit</button>
+      <br></br>
+      <br></br>
       <div>
         <h6>Predicted Class:</h6>
         <p>{predictions.classpreds}</p>
